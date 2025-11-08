@@ -70,6 +70,26 @@ model Property {
   owner      User  @relation("UserProperties", fields: [ownerId], references: [id])
   reviewedBy User? @relation("AdminReviews", fields: [reviewedById], references: [id])
 
-  // roomTypes RoomType[]
+  roomTypes RoomType[]
   // bookings  Booking[]
+}
+
+model RoomType {
+  id               String   @id @default(cuid())
+  propertyId       String
+  name             String
+  description      String?
+  bedConfiguration String
+  maxAdults        Int
+  maxChildren      Int
+  pricePerNight    Float
+  availableRooms   Int
+  images           String[]
+  amenities        String[]
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  // bookings Booking[]
 }
