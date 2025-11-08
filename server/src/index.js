@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import { prisma } from './config/database.js';
+import { clerkAuthMiddleware, requireAuth, optionalAuth } from './middleware/clerkAuth.js';
 
 dotenv.config();
 
@@ -22,6 +23,8 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+app.use(clerkAuthMiddleware);
 
 app.get('/api/health', async (req, res) => {
   try {
@@ -45,6 +48,32 @@ app.get('/api/health', async (req, res) => {
       timestamp: new Date().toISOString()
     });
   }
+});
+
+app.get('/api/test/auth', requireAuth, (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: 'Authentication successful',
+    auth: {
+      userId: req.auth.userId,
+      sessionId: req.auth.sessionId,
+      orgId: req.auth.orgId,
+    },
+    timestamp: new Date().toISOString()
+  });
+});
+
+app.get('/api/test/optional-auth', optionalAuth, (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: 'Public route accessed',
+    authenticated: req.auth ? true : false,
+    auth: req.auth ? {
+      userId: req.auth.userId,
+      sessionId: req.auth.sessionId,
+    } : null,
+    timestamp: new Date().toISOString()
+  });
 });
 
 app.use((req, res) => {
