@@ -1,5 +1,4 @@
 import prisma from '../config/database.js';
-import { findOrCreateUser } from '../utils/user.utils.js';
 
 export async function searchProperties(req, res) {
   try {
@@ -111,22 +110,14 @@ export async function getPropertyById(req, res) {
 
 export async function createProperty(req, res) {
   try {
-    const clerkUserId = req.auth.userId;
-    const clerkEmail = req.auth.sessionClaims?.email || req.auth.sessionClaims?.primaryEmailAddress?.emailAddress;
-    const clerkFirstName = req.auth.sessionClaims?.firstName;
-    const clerkLastName = req.auth.sessionClaims?.lastName;
-
-    const user = await findOrCreateUser(clerkUserId, {
-      email: clerkEmail,
-      firstName: clerkFirstName,
-      lastName: clerkLastName
-    });
+    const user = req.user;
 
     if (user.role === 'CUSTOMER') {
       await prisma.user.update({
         where: { id: user.id },
         data: { role: 'HOTEL_OWNER' }
       });
+      user.role = 'HOTEL_OWNER';
     }
 
     const propertyData = req.body;
