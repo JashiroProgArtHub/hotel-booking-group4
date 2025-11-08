@@ -18,6 +18,7 @@ import {
   ConflictError
 } from './middleware/errorHandler.js';
 import { z } from 'zod';
+import propertyRoutes from './routes/property.routes.js';
 
 dotenv.config();
 
@@ -233,6 +234,8 @@ app.get('/api/test/error/async', asyncHandler(async (req, res) => {
 app.get('/api/test/error/database', asyncHandler(async (req, res) => {
   throw new Error('Database connection failed');
 }));
+
+app.use('/api/properties', propertyRoutes);
 
 app.use(notFoundHandler);
 
