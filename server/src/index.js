@@ -5,6 +5,7 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import { prisma } from './config/database.js';
 import { clerkAuthMiddleware, requireAuth, optionalAuth } from './middleware/clerkAuth.js';
+import { authorize } from './middleware/authorize.js';
 
 dotenv.config();
 
@@ -72,6 +73,70 @@ app.get('/api/test/optional-auth', optionalAuth, (req, res) => {
       userId: req.auth.userId,
       sessionId: req.auth.sessionId,
     } : null,
+    timestamp: new Date().toISOString()
+  });
+});
+
+app.get('/api/test/customer', requireAuth, authorize('CUSTOMER'), (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: 'Customer route accessed successfully',
+    user: {
+      id: req.user.id,
+      email: req.user.email,
+      role: req.user.role,
+      firstName: req.user.firstName,
+      lastName: req.user.lastName
+    },
+    requiredRole: 'CUSTOMER',
+    timestamp: new Date().toISOString()
+  });
+});
+
+app.get('/api/test/owner', requireAuth, authorize('HOTEL_OWNER'), (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: 'Hotel owner route accessed successfully',
+    user: {
+      id: req.user.id,
+      email: req.user.email,
+      role: req.user.role,
+      firstName: req.user.firstName,
+      lastName: req.user.lastName
+    },
+    requiredRole: 'HOTEL_OWNER',
+    timestamp: new Date().toISOString()
+  });
+});
+
+app.get('/api/test/admin', requireAuth, authorize('ADMIN'), (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: 'Admin route accessed successfully',
+    user: {
+      id: req.user.id,
+      email: req.user.email,
+      role: req.user.role,
+      firstName: req.user.firstName,
+      lastName: req.user.lastName
+    },
+    requiredRole: 'ADMIN',
+    timestamp: new Date().toISOString()
+  });
+});
+
+app.get('/api/test/admin-or-owner', requireAuth, authorize('ADMIN', 'HOTEL_OWNER'), (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: 'Admin or Hotel Owner route accessed successfully',
+    user: {
+      id: req.user.id,
+      email: req.user.email,
+      role: req.user.role,
+      firstName: req.user.firstName,
+      lastName: req.user.lastName
+    },
+    requiredRoles: ['ADMIN', 'HOTEL_OWNER'],
     timestamp: new Date().toISOString()
   });
 });
