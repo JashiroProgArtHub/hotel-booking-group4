@@ -17,7 +17,7 @@ router.get('/search', searchProperties);
 router.get('/owner/my-properties', requireAuth, authorize('HOTEL_OWNER'), getOwnerProperties);
 router.get('/:id', getPropertyById);
 
-router.post('/', requireAuth, authorize('HOTEL_OWNER'), validateBody(createPropertySchema), createProperty);
+router.post('/', requireAuth, validateBody(createPropertySchema), createProperty);
 router.put('/:id', requireAuth, authorize('HOTEL_OWNER'), validateBody(updatePropertySchema), updateProperty);
 
 export default router;

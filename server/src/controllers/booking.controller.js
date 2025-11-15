@@ -157,6 +157,15 @@ export async function getMyBookings(req, res) {
             pricePerNight: true,
             amenities: true
           }
+        },
+        payment: {
+          select: {
+            xenditInvoiceId: true,
+            amount: true,
+            paymentMethod: true,
+            paymentStatus: true,
+            transactionDate: true
+          }
         }
       },
       orderBy: { createdAt: 'desc' }
@@ -209,6 +218,15 @@ export async function getBookingById(req, res) {
             email: true,
             firstName: true,
             lastName: true
+          }
+        },
+        payment: {
+          select: {
+            xenditInvoiceId: true,
+            amount: true,
+            paymentMethod: true,
+            paymentStatus: true,
+            transactionDate: true
           }
         }
       }
@@ -338,6 +356,15 @@ export async function cancelBooking(req, res) {
             maxChildren: true,
             pricePerNight: true,
             amenities: true
+          }
+        },
+        payment: {
+          select: {
+            xenditInvoiceId: true,
+            amount: true,
+            paymentMethod: true,
+            paymentStatus: true,
+            transactionDate: true
           }
         }
       }

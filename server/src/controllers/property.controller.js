@@ -111,14 +111,24 @@ export async function getPropertyById(req, res) {
 
 export async function createProperty(req, res) {
   try {
-    const user = req.user;
+    const clerkUserId = req.auth.userId;
+    console.log(clerkUserId)
+    let user = await prisma.user.findUnique({
+      where: { clerkUserId }
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found'
+      });
+    }
 
     if (user.role === 'CUSTOMER') {
-      await prisma.user.update({
+      user = await prisma.user.update({
         where: { id: user.id },
         data: { role: 'HOTEL_OWNER' }
       });
-      user.role = 'HOTEL_OWNER';
     }
 
     const propertyData = req.body;

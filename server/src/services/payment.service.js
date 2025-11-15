@@ -45,7 +45,8 @@ export async function createXenditInvoice(bookingData) {
 
     return {
       invoiceUrl: invoice.invoiceUrl,
-      invoiceId: invoice.id
+      invoiceId: invoice.id,
+      expiryDate: invoice.expiryDate
     };
 
   } catch (error) {

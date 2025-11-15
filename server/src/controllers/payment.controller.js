@@ -93,6 +93,7 @@ export async function createPaymentInvoice(req, res) {
         invoiceUrl: invoiceData.invoiceUrl,
         invoiceId: invoiceData.invoiceId,
         amount: booking.totalAmount,
+        expiryDate: invoiceData.expiryDate,
         bookingId: booking.bookingId,
         propertyName: booking.property.name,
         roomType: booking.roomType.name,
