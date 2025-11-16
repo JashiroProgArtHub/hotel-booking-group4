@@ -55,6 +55,9 @@ model User {
   properties         Property[] @relation("UserProperties")
   reviewedProperties Property[] @relation("AdminReviews")
   bookings           Booking[]
+
+  @@index([clerkUserId])
+  @@index([email])
 }
 
 model Property {
@@ -86,6 +89,11 @@ model Property {
 
   roomTypes RoomType[]
   bookings  Booking[]
+
+  @@index([status])
+  @@index([city])
+  @@index([ownerId])
+  @@index([status, city])
 }
 
 model RoomType {
@@ -106,6 +114,9 @@ model RoomType {
   property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
 
   bookings Booking[]
+
+  @@index([propertyId])
+  @@index([pricePerNight])
 }
 
 model Booking {
@@ -131,6 +142,13 @@ model Booking {
   roomType RoomType @relation(fields: [roomTypeId], references: [id])
 
   payment Payment?
+
+  @@index([userId])
+  @@index([checkInDate])
+  @@index([checkOutDate])
+  @@index([bookingStatus])
+  @@index([userId, bookingStatus])
+  @@index([roomTypeId, checkInDate, checkOutDate])
 }
 
 model Payment {
