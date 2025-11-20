@@ -38,6 +38,11 @@ import uploadArea from "./uploadArea.svg";
 import totalBookingIcon from "./totalBookingIcon.svg";
 import totalRevenueIcon from "./totalRevenueIcon.svg";
 
+import Conybeare from "./Conybeare.jpg"
+import Jashen from './Jashen.jpg'
+
+import Cordova from "./cordova-map.png"
+
 
 export const assets = {
     logo,
@@ -72,6 +77,15 @@ export const assets = {
     uploadArea,
     totalBookingIcon,
     totalRevenueIcon,
+}
+
+export const team = {
+    Conybeare,
+    Jashen,
+}
+
+export const images = {
+    Cordova,
 }
 
 export const cities = [

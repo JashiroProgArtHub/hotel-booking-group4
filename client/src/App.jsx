@@ -10,6 +10,7 @@ import Pending from './components/Pending'
 import Upcoming from './components/Upcoming'
 import AwaitingReview from './components/AwaitingReview'
 import AllBookings from './components/AllBookings'
+import About from './pages/About'
 
 const App = () => {
 
@@ -31,9 +32,11 @@ const App = () => {
            <Route index element={<AllBookings/>} />
 
         </Route>
+        <Route path='/about' element={<About/>}/>
       </Routes>
     </div>
     {/* <Footer/> */}
+    <Footer/>
     </div>
   )
 }
