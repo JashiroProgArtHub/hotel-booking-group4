@@ -1,8 +1,11 @@
 export class ValidationError extends Error {
-  constructor(message = 'Validation failed') {
+  constructor(message = 'Validation failed', details = null) {
     super(message);
     this.name = 'ValidationError';
     this.statusCode = 400;
+    if (details) {
+      this.details = details;
+    }
   }
 }
 
@@ -57,23 +60,7 @@ export const errorHandler = (err, req, res, next) => {
     console.error('='.repeat(80) + '\n');
   }
 
-  let statusCode = 500;
-
-  if (err.statusCode) {
-    statusCode = err.statusCode;
-  } else if (err.status) {
-    statusCode = err.status;
-  } else if (err.name === 'ValidationError') {
-    statusCode = 400;
-  } else if (err.name === 'AuthenticationError' || err.name === 'UnauthorizedError') {
-    statusCode = 401;
-  } else if (err.name === 'AuthorizationError' || err.name === 'ForbiddenError') {
-    statusCode = 403;
-  } else if (err.name === 'NotFoundError') {
-    statusCode = 404;
-  } else if (err.name === 'ConflictError') {
-    statusCode = 409;
-  }
+  const statusCode = err.statusCode || err.status || 500;
 
   const errorResponse = {
     success: false,
@@ -100,14 +87,22 @@ export const errorHandler = (err, req, res, next) => {
 };
 
 export const notFoundHandler = (req, res) => {
-  res.status(404).json({
+  const NODE_ENV = process.env.NODE_ENV || 'development';
+  const isDevelopment = NODE_ENV === 'development';
+
+  const response = {
     success: false,
     error: 'Route not found',
     statusCode: 404,
-    path: req.originalUrl,
-    method: req.method,
     timestamp: new Date().toISOString()
-  });
+  };
+
+  if (isDevelopment) {
+    response.path = req.originalUrl;
+    response.method = req.method;
+  }
+
+  res.status(404).json(response);
 };
 
 export const asyncHandler = (fn) => {

@@ -1,4 +1,5 @@
 import { ZodError } from 'zod';
+import { ValidationError } from './errorHandler.js';
 
 export const validate = (schema, source = 'body') => {
   return (req, res, next) => {
@@ -15,11 +16,7 @@ export const validate = (schema, source = 'body') => {
           code: err.code
         }));
 
-        return res.status(400).json({
-          success: false,
-          error: 'Validation failed',
-          details
-        });
+        return next(new ValidationError('Validation failed', details));
       }
 
       next(error);

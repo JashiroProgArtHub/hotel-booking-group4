@@ -1,4 +1,6 @@
 import prisma from '../config/database.js';
+import { sendEmail, emailTemplates } from '../services/email.service.js';
+import { NotFoundError, AuthorizationError } from '../middleware/errorHandler.js';
 
 export async function searchProperties(req, res) {
   try {
@@ -62,10 +64,7 @@ export async function searchProperties(req, res) {
     });
   } catch (error) {
     console.error('Error in searchProperties:', error);
-    return res.status(500).json({
-      success: false,
-      error: 'Failed to search properties'
-    });
+    throw error;
   }
 }
 
@@ -89,10 +88,7 @@ export async function getPropertyById(req, res) {
     });
 
     if (!property) {
-      return res.status(404).json({
-        success: false,
-        error: 'Property not found'
-      });
+      throw new NotFoundError('Property not found');
     }
 
     return res.status(200).json({
@@ -100,24 +96,31 @@ export async function getPropertyById(req, res) {
       data: property
     });
   } catch (error) {
+    if (error.name === 'NotFoundError' || error.statusCode) {
+      throw error;
+    }
     console.error('Error in getPropertyById:', error);
-    return res.status(500).json({
-      success: false,
-      error: 'Failed to retrieve property'
-    });
+    throw error;
   }
 }
 
 export async function createProperty(req, res) {
   try {
-    const user = req.user;
+    const clerkUserId = req.auth.userId;
+    console.log(clerkUserId)
+    let user = await prisma.user.findUnique({
+      where: { clerkUserId }
+    });
+
+    if (!user) {
+      throw new NotFoundError('User not found');
+    }
 
     if (user.role === 'CUSTOMER') {
-      await prisma.user.update({
+      user = await prisma.user.update({
         where: { id: user.id },
         data: { role: 'HOTEL_OWNER' }
       });
-      user.role = 'HOTEL_OWNER';
     }
 
     const propertyData = req.body;
@@ -140,17 +143,33 @@ export async function createProperty(req, res) {
       }
     });
 
+    try {
+      const ownerName = user.firstName && user.lastName
+        ? `${user.firstName} ${user.lastName}`
+        : 'Hotel Owner';
+
+      const emailTemplate = emailTemplates.propertySubmission({
+        ownerName,
+        propertyName: property.name
+      });
+
+      await sendEmail(user.email, emailTemplate);
+      console.log('Property submission confirmation email sent successfully to:', user.email);
+    } catch (emailError) {
+      console.error('Error sending property submission email:', emailError.message);
+    }
+
     return res.status(201).json({
       success: true,
       message: 'Property submitted for review',
       data: property
     });
   } catch (error) {
+    if (error.statusCode) {
+      throw error;
+    }
     console.error('Error in createProperty:', error);
-    return res.status(500).json({
-      success: false,
-      error: 'Failed to create property'
-    });
+    throw error;
   }
 }
 
@@ -164,10 +183,7 @@ export async function updateProperty(req, res) {
     });
 
     if (!user) {
-      return res.status(404).json({
-        success: false,
-        error: 'User not found'
-      });
+      throw new NotFoundError('User not found');
     }
 
     const existingProperty = await prisma.property.findUnique({
@@ -175,17 +191,11 @@ export async function updateProperty(req, res) {
     });
 
     if (!existingProperty) {
-      return res.status(404).json({
-        success: false,
-        error: 'Property not found'
-      });
+      throw new NotFoundError('Property not found');
     }
 
     if (existingProperty.ownerId !== user.id) {
-      return res.status(403).json({
-        success: false,
-        error: 'You do not have permission to update this property'
-      });
+      throw new AuthorizationError('You do not have permission to update this property');
     }
 
     const propertyData = req.body;
@@ -218,11 +228,11 @@ export async function updateProperty(req, res) {
       data: updatedProperty
     });
   } catch (error) {
+    if (error.statusCode) {
+      throw error;
+    }
     console.error('Error in updateProperty:', error);
-    return res.status(500).json({
-      success: false,
-      error: 'Failed to update property'
-    });
+    throw error;
   }
 }
 
@@ -235,10 +245,7 @@ export async function getOwnerProperties(req, res) {
     });
 
     if (!user) {
-      return res.status(404).json({
-        success: false,
-        error: 'User not found'
-      });
+      throw new NotFoundError('User not found');
     }
 
     const properties = await prisma.property.findMany({
@@ -259,10 +266,10 @@ export async function getOwnerProperties(req, res) {
       data: properties
     });
   } catch (error) {
+    if (error.statusCode) {
+      throw error;
+    }
     console.error('Error in getOwnerProperties:', error);
-    return res.status(500).json({
-      success: false,
-      error: 'Failed to retrieve properties'
-    });
+    throw error;
   }
 }
