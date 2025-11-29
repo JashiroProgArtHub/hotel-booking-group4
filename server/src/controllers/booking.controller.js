@@ -225,14 +225,14 @@ export async function getBookingById(req, res) {
     });
 
     if (!currentUser) {
-      throw new NotFoundError('User not found');
+      throw new AuthorizationError('Forbidden: You do not have access to this booking');
     }
 
     const isOwner = booking.userId === currentUser.id;
     const isAdmin = currentUser.role === 'ADMIN';
 
     if (!isOwner && !isAdmin) {
-      throw new AuthorizationError('You do not have permission to view this booking');
+      throw new AuthorizationError('Forbidden: You do not have access to this booking');
     }
 
     return res.status(200).json({
@@ -245,6 +245,114 @@ export async function getBookingById(req, res) {
       throw error;
     }
     console.error('Get booking by ID error:', error);
+    throw error;
+  }
+}
+
+export async function getOwnerBookings(req, res) {
+  try {
+    const { propertyId, status, startDate, endDate } = req.query;
+
+    const user = await prisma.user.findUnique({
+      where: { clerkUserId: req.auth.userId }
+    });
+
+    if (!user) {
+      throw new NotFoundError('User not found');
+    }
+
+    const ownedProperties = await prisma.property.findMany({
+      where: { ownerId: user.id },
+      select: { id: true }
+    });
+
+    const ownedPropertyIds = ownedProperties.map(p => p.id);
+
+    if (ownedPropertyIds.length === 0) {
+      return res.status(200).json({
+        success: true,
+        count: 0,
+        data: []
+      });
+    }
+
+    const whereClause = {
+      propertyId: { in: ownedPropertyIds }
+    };
+
+    if (propertyId && ownedPropertyIds.includes(propertyId)) {
+      whereClause.propertyId = propertyId;
+    }
+
+    if (status) {
+      whereClause.bookingStatus = status.toUpperCase();
+    }
+
+    if (startDate || endDate) {
+      whereClause.checkInDate = {};
+      if (startDate) {
+        whereClause.checkInDate.gte = new Date(startDate);
+      }
+      if (endDate) {
+        whereClause.checkInDate.lte = new Date(endDate);
+      }
+    }
+
+    const bookings = await prisma.booking.findMany({
+      where: whereClause,
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true
+          }
+        },
+        property: {
+          select: {
+            id: true,
+            name: true,
+            address: true,
+            city: true,
+            contactEmail: true
+          }
+        },
+        roomType: {
+          select: {
+            id: true,
+            name: true,
+            bedConfiguration: true,
+            pricePerNight: true
+          }
+        },
+        payment: {
+          select: {
+            id: true,
+            xenditInvoiceId: true,
+            amount: true,
+            paymentMethod: true,
+            paymentStatus: true,
+            transactionDate: true
+          }
+        }
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    });
+
+    return res.status(200).json({
+      success: true,
+      count: bookings.length,
+      data: bookings
+    });
+
+  } catch (error) {
+    if (error.statusCode) {
+      throw error;
+    }
+    console.error('Get owner bookings error:', error);
     throw error;
   }
 }

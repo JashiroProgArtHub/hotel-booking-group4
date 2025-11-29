@@ -1,6 +1,6 @@
 import prisma from '../config/database.js';
 import { sendEmail, emailTemplates } from '../services/email.service.js';
-import { NotFoundError } from '../middleware/errorHandler.js';
+import { NotFoundError, ValidationError, AuthorizationError } from '../middleware/errorHandler.js';
 
 export async function getPendingProperties(req, res) {
   try {
@@ -299,6 +299,124 @@ export async function getAllBookings(req, res) {
       throw error;
     }
     console.error('Error in getAllBookings:', error);
+    throw error;
+  }
+}
+
+export async function getAllUsers(req, res) {
+  try {
+    const users = await prisma.user.findMany({
+      select: {
+        id: true,
+        clerkUserId: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+        createdAt: true,
+        updatedAt: true,
+        _count: {
+          select: {
+            bookings: true,
+            properties: true
+          }
+        }
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    });
+
+    const usersWithActivity = users.map(user => {
+      const { _count, ...userData } = user;
+      return {
+        ...userData,
+        totalBookings: _count.bookings,
+        totalProperties: _count.properties,
+      };
+    });
+
+    return res.status(200).json({
+      success: true,
+      count: usersWithActivity.length,
+      data: usersWithActivity
+    });
+  } catch (error) {
+    if (error.statusCode) {
+      throw error;
+    }
+    console.error('Error in getAllUsers:', error);
+    throw error;
+  }
+}
+
+export async function updateUserRole(req, res) {
+  try {
+    const { id } = req.params;
+    const { role } = req.body;
+    const adminUserId = req.user.id;
+
+    const validRoles = ['CUSTOMER', 'HOTEL_OWNER', 'ADMIN'];
+    if (!role || !validRoles.includes(role)) {
+      throw new ValidationError(`Invalid role. Must be one of: ${validRoles.join(', ')}`);
+    }
+
+    if (id === adminUserId) {
+      throw new AuthorizationError('You cannot change your own role');
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        role: true
+      }
+    });
+
+    if (!user) {
+      throw new NotFoundError('User not found');
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id },
+      data: { role },
+      select: {
+        id: true,
+        clerkUserId: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+        createdAt: true,
+        updatedAt: true,
+        _count: {
+          select: {
+            bookings: true,
+            properties: true
+          }
+        }
+      }
+    });
+
+    const { _count, ...userData } = updatedUser;
+
+    return res.status(200).json({
+      success: true,
+      message: `User role updated to ${role} successfully`,
+      data: {
+        ...userData,
+        totalBookings: _count.bookings,
+        totalProperties: _count.properties,
+      }
+    });
+  } catch (error) {
+    if (error.statusCode) {
+      throw error;
+    }
+    console.error('Error in updateUserRole:', error);
     throw error;
   }
 }

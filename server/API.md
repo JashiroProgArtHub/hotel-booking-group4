@@ -228,7 +228,9 @@ curl -X GET "http://localhost:5000/api/properties/clq1234567890abcdef"
 ```json
 {
   "success": false,
-  "error": "Property not found"
+  "error": "Property not found",
+  "statusCode": 404,
+  "timestamp": "2025-11-29T16:18:41.910Z"
 }
 ```
 
@@ -387,14 +389,13 @@ curl -X POST "http://localhost:5000/api/properties" \
 {
   "success": false,
   "error": "Validation failed",
+  "statusCode": 400,
+  "timestamp": "2025-11-29T16:20:06.471Z",
   "details": [
     {
       "field": "description",
-      "message": "Description must be at least 50 characters"
-    },
-    {
-      "field": "images",
-      "message": "At least 3 images are required"
+      "message": "Description must be at least 50 characters",
+      "code": "too_small"
     }
   ]
 }
@@ -492,7 +493,9 @@ curl -X PUT "http://localhost:5000/api/properties/clq9876543210zyxwvu" \
 ```json
 {
   "success": false,
-  "error": "You do not have permission to update this property"
+  "error": "You do not have permission to update this property",
+  "statusCode": 403,
+  "timestamp": "2025-11-29T16:23:30.991Z"
 }
 ```
 
@@ -672,7 +675,9 @@ curl -X POST "http://localhost:5000/api/bookings" \
 ```json
 {
   "success": false,
-  "error": "No rooms available for selected dates"
+  "error": "No rooms available for selected dates",
+  "statusCode": 400,
+  "timestamp": "2025-11-29T16:25:12.583Z"
 }
 ```
 
@@ -681,6 +686,8 @@ curl -X POST "http://localhost:5000/api/bookings" \
 {
   "success": false,
   "error": "Validation failed",
+  "statusCode": 400,
+  "timestamp": "2025-11-29T16:25:42.581Z",
   "details": [
     {
       "field": "checkOutDate",
@@ -843,7 +850,9 @@ curl -X GET "http://localhost:5000/api/bookings/cls1234567890booking" \
 ```json
 {
   "success": false,
-  "error": "Forbidden: You do not have access to this booking"
+  "error": "Forbidden: You do not have access to this booking",
+  "statusCode": 403,
+  "timestamp": "2025-11-29T16:36:58.441Z"
 }
 ```
 
@@ -928,8 +937,9 @@ curl -X PATCH "http://localhost:5000/api/bookings/cls1234567890booking/cancel" \
 ```json
 {
   "success": false,
-  "error": "Cancellation not allowed",
-  "message": "Bookings can only be cancelled at least 7 days before check-in date"
+  "error": "Bookings can only be cancelled at least 7 days before check-in date",
+  "statusCode": 400,
+  "timestamp": "2025-11-29T17:00:11.551Z"
 }
 ```
 
@@ -1429,6 +1439,155 @@ curl -X GET "http://localhost:5000/api/admin/bookings" \
 
 ---
 
+### Get All Users
+
+Get all users with activity summary for admin management.
+
+**Endpoint**: `GET /api/admin/users`
+**Authentication**: Required
+**Role Required**: `ADMIN`
+
+**Example Request:**
+```bash
+curl -X GET "http://localhost:5000/api/admin/users" \
+  -H "Authorization: Bearer <admin_clerk_token>"
+```
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "count": 5,
+  "data": [
+    {
+      "id": "cmhzkxcv10002nwr6bcprlqpg",
+      "clerkUserId": "user_2abc123def456",
+      "email": "maria@example.com",
+      "firstName": "Maria",
+      "lastName": "Santos",
+      "role": "HOTEL_OWNER",
+      "createdAt": "2025-11-15T00:30:00.000Z",
+      "updatedAt": "2025-11-15T00:30:00.000Z",
+      "totalBookings": 0,
+      "totalProperties": 2
+    },
+    {
+      "id": "cmhzt1o130000lbcyphi0suyx",
+      "clerkUserId": "user_35V4fvmJG7QUGiEtVbQrrZNakDW",
+      "email": "john@example.com",
+      "firstName": "John",
+      "lastName": "Doe",
+      "role": "CUSTOMER",
+      "createdAt": "2025-11-14T12:00:00.000Z",
+      "updatedAt": "2025-11-14T12:00:00.000Z",
+      "totalBookings": 3,
+      "totalProperties": 0
+    },
+    {...}
+  ]
+}
+```
+
+**Notes:**
+- Users ordered by creation date (newest first)
+- Includes activity summary (totalBookings, totalProperties)
+- No `_count` field in response (properly transformed)
+- Shows all users regardless of role
+
+---
+
+### Update User Role
+
+Update a user's role (CUSTOMER, HOTEL_OWNER, or ADMIN).
+
+**Endpoint**: `PATCH /api/admin/users/:id/role`
+**Authentication**: Required
+**Role Required**: `ADMIN`
+
+**Path Parameters:**
+- `id` (string, required) - User ID
+
+**Request Body:**
+```json
+{
+  "role": "HOTEL_OWNER"
+}
+```
+
+**Valid Roles:**
+- `CUSTOMER` - Regular platform user
+- `HOTEL_OWNER` - Can manage properties
+- `ADMIN` - Full administrative access
+
+**Example Request:**
+```bash
+curl -X PATCH "http://localhost:5000/api/admin/users/cmhzt1o130000lbcyphi0suyx/role" \
+  -H "Authorization: Bearer <admin_clerk_token>" \
+  -H "Content-Type: application/json" \
+  -d '{"role": "HOTEL_OWNER"}'
+```
+
+**Success Response (200):**
+```json
+{
+
+  "success": true,
+  "message": "User role updated to HOTEL_OWNER successfully",
+  "data": {
+    "id": "cmhzt1o130000lbcyphi0suyx",
+    "clerkUserId": "user_35V4fvmJG7QUGiEtVbQrrZNakDW",
+    "email": "john@example.com",
+    "firstName": "John",
+    "lastName": "Doe",
+    "role": "HOTEL_OWNER",
+    "createdAt": "2025-11-14T12:00:00.000Z",
+    "updatedAt": "2025-11-29T10:30:00.000Z",
+    "totalBookings": 3,
+    "totalProperties": 0
+  }
+}
+```
+
+**Error Responses:**
+
+**400 Bad Request** - Invalid role:
+```json
+{
+  "success": false,
+  "error": "Invalid role. Must be one of: CUSTOMER, HOTEL_OWNER, ADMIN",
+  "statusCode": 400,
+  "timestamp": "2025-11-29T10:30:00.000Z"
+}
+```
+
+**403 Forbidden** - Attempting to change own role:
+```json
+{
+  "success": false,
+  "error": "You cannot change your own role",
+  "statusCode": 403,
+  "timestamp": "2025-11-29T10:30:00.000Z"
+}
+```
+
+**404 Not Found** - User doesn't exist:
+```json
+{
+  "success": false,
+  "error": "User not found",
+  "statusCode": 404,
+  "timestamp": "2025-11-29T10:30:00.000Z"
+}
+```
+
+**Notes:**
+- Admin cannot change their own role (security protection)
+- Role change is immediate (no confirmation needed)
+- All role validations enforced server-side
+- Updates user's `updatedAt` timestamp
+
+---
+
 ## Webhooks
 
 ### Clerk Webhook
@@ -1773,7 +1932,6 @@ const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
 });
 
-// Add Clerk token to all requests
 api.interceptors.request.use(async (config) => {
   const token = await window.Clerk.session.getToken();
   if (token) {
@@ -1789,10 +1947,8 @@ export default api;
 ```javascript
 import api from './lib/api';
 
-// Search properties
 const { data } = await api.get('/properties/search?propertyType=HOTEL');
 
-// Create booking
 const booking = await api.post('/bookings', {
   propertyId: 'clq123...',
   roomTypeId: 'clr456...',
