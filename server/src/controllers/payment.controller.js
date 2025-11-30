@@ -1,5 +1,5 @@
 import prisma from '../config/database.js';
-import { createXenditInvoice } from '../services/payment.service.js';
+import { createXenditInvoice, getInvoiceStatus } from '../services/payment.service.js';
 import { clerkClient } from '@clerk/express';
 import { sendEmail, emailTemplates } from '../services/email.service.js';
 import { NotFoundError, ValidationError, AuthorizationError } from '../middleware/errorHandler.js';
@@ -234,5 +234,104 @@ export async function handleXenditWebhook(req, res) {
   } catch (error) {
     console.error('Xendit Webhook Error:', error);
     return res.status(200).json({ received: true });
+  }
+}
+
+export async function verifyPaymentStatus(req, res) {
+  try {
+    const { bookingId } = req.params;
+
+    const whereClause = bookingId.startsWith('GEM-')
+      ? { bookingId }
+      : { id: bookingId };
+
+    const booking = await prisma.booking.findUnique({
+      where: whereClause,
+      include: {
+        payment: true,
+        property: true,
+        roomType: true,
+        user: true
+      }
+    });
+
+    if (!booking) {
+      throw new NotFoundError('Booking not found');
+    }
+
+    if (booking.user.clerkUserId !== req.auth.userId) {
+      throw new AuthorizationError('You are not authorized to verify this payment');
+    }
+
+    if (!booking.payment) {
+      return res.status(200).json({
+        success: true,
+        message: 'No payment record found for this booking',
+        data: { bookingStatus: booking.bookingStatus, paymentStatus: null }
+      });
+    }
+
+    if (booking.payment.paymentStatus === 'PAID') {
+      return res.status(200).json({
+        success: true,
+        message: 'Payment already confirmed',
+        data: { bookingStatus: booking.bookingStatus, paymentStatus: 'PAID' }
+      });
+    }
+
+    const xenditStatus = await getInvoiceStatus(booking.payment.xenditInvoiceId);
+
+    if (xenditStatus.status === 'PAID' || xenditStatus.status === 'SETTLED') {
+      await prisma.payment.update({
+        where: { id: booking.payment.id },
+        data: {
+          paymentStatus: 'PAID',
+          paymentMethod: xenditStatus.paymentMethod || null,
+          transactionDate: xenditStatus.paidAt ? new Date(xenditStatus.paidAt) : new Date()
+        }
+      });
+
+      await prisma.booking.update({
+        where: { id: booking.id },
+        data: { bookingStatus: 'CONFIRMED' }
+      });
+
+      console.log('Payment verified and booking confirmed:', {
+        bookingId: booking.bookingId,
+        xenditInvoiceId: booking.payment.xenditInvoiceId
+      });
+
+      return res.status(200).json({
+        success: true,
+        message: 'Payment verified successfully',
+        data: { bookingStatus: 'CONFIRMED', paymentStatus: 'PAID', updated: true }
+      });
+    }
+
+    if (xenditStatus.status === 'EXPIRED') {
+      await prisma.payment.update({
+        where: { id: booking.payment.id },
+        data: { paymentStatus: 'FAILED', transactionDate: new Date() }
+      });
+
+      return res.status(200).json({
+        success: true,
+        message: 'Payment has expired',
+        data: { bookingStatus: booking.bookingStatus, paymentStatus: 'FAILED', updated: true }
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Payment is still pending',
+      data: { bookingStatus: booking.bookingStatus, paymentStatus: xenditStatus.status }
+    });
+
+  } catch (error) {
+    if (error.statusCode) {
+      throw error;
+    }
+    console.error('Verify Payment Status Error:', error);
+    throw error;
   }
 }

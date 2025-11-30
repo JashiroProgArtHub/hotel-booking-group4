@@ -74,7 +74,7 @@ export function verifyWebhookSignature(webhookToken) {
 export async function getInvoiceStatus(invoiceId) {
   try {
     const { Invoice } = xenditClient;
-    const invoice = await Invoice.getInvoice({ invoiceId });
+    const invoice = await Invoice.getInvoiceById({ invoiceId });
 
     return {
       id: invoice.id,
