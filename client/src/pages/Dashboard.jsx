@@ -26,7 +26,7 @@ const Dashboard = () => {
     </div>
     
     <div>
-        <div className="flex gap-[2rem]">
+        <div className="flex gap-8">
             <NavLink to="/owner" end className= {({isActive}) => `text-l p-5 hover:font-bold relative after:content-[''] after:absolute after:left-0 after:bottom-0  after:h-[2px] after:w-0 after:bg-blue-500 after:transition-all after:duration-300 hover:after:w-full  ${isActive ? "relative after:content-[''] after:absolute after:left-0 after:bottom-0  after:h-[2px] after:w-0 after:bg-blue-500 after:transition-all after:duration-300 after:w-full" : ''}`}>All </NavLink>
             <NavLink to="pending" className={({isActive}) => `text-l p-5 hover:font-bold relative after:content-[''] after:absolute after:left-0 after:bottom-0  after:h-[2px] after:w-0 after:bg-blue-500 after:transition-all after:duration-300 hover:after:w-full ${isActive ? "relative after:content-[''] after:absolute after:left-0 after:bottom-0  after:h-[2px] after:w-0 after:bg-blue-500 after:transition-all after:duration-300 after:w-full" : ''}`}>Pending Payment </NavLink>
             <NavLink to="upcoming" className={({isActive}) => `text-l p-5 hover:font-bold relative after:content-[''] after:absolute after:left-0 after:bottom-0  after:h-[2px] after:w-0 after:bg-blue-500 after:transition-all after:duration-300 hover:after:w-full ${isActive ?  "relative after:content-[''] after:absolute after:left-0 after:bottom-0  after:h-[2px] after:w-0 after:bg-blue-500 after:transition-all after:duration-300 after:w-full" : ''}`}>Upcoming </NavLink>

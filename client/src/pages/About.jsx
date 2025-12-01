@@ -110,7 +110,7 @@ const teamMembers = [
         subTitle="Meet the dedicated individuals behind our hotel booking system — building solutions that connect travelers and local businesses."
     />
 
-    <div className="grid gap-10 sm:grid-cols-2 md:grid-cols-5 mt-16 mx-10 max-w-3/4 mx-auto">
+    <div className="grid gap-10 sm:grid-cols-2 md:grid-cols-5 mt-16 max-w-3/4 mx-auto">
         {teamMembers.map((member, index) => (
         <TeamMember 
             key={index}
