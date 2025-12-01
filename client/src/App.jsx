@@ -11,6 +11,7 @@ import Upcoming from './components/Upcoming'
 import AwaitingReview from './components/AwaitingReview'
 import AllBookings from './components/AllBookings'
 import About from './pages/About'
+import MyBookings from './pages/MyBookings'
 
 const App = () => {
 
@@ -24,13 +25,13 @@ const App = () => {
         <Route path='/' element={<Home/>}/>
         <Route path='/rooms' element={<AllRooms/>}/>
         <Route path='/rooms/:id' element={<RoomDetails/>}/>
+        <Route path='/my-bookings' element={<MyBookings/>}/>
 
         <Route path='owner' element={<Dashboard/>}>
           <Route path='pending' element={<Pending />} />
           <Route path='upcoming' element={<Upcoming />} />
           <Route path='awaiting-review' element={<AwaitingReview/>} />
            <Route index element={<AllBookings/>} />
-
         </Route>
         <Route path='/about' element={<About/>}/>
       </Routes>
